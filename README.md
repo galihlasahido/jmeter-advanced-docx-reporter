@@ -2,6 +2,8 @@
 
 A JMeter plugin that generates professional Word (DOCX) reports from your performance test results with customizable formatting and HTML response rendering.
 
+Inspired by the [Flexible File Writer](https://jmeter-plugins.org/wiki/FlexibleFileWriter/) plugin, this reporter extends the concept of customizable output formats to generate Word documents with rich formatting, embedded images, and summary statistics.
+
 ## Features
 
 - **DOCX Report Generation** - Automatically generates Word documents at the end of test execution
@@ -34,8 +36,8 @@ A JMeter plugin that generates professional Word (DOCX) reports from your perfor
 
 ```bash
 # Clone the repository
-git clone https://github.com/yourusername/advance-report.git
-cd advance-report
+git clone https://github.com/galihlasahido/jmeter-advanced-docx-reporter.git
+cd jmeter-advanced-docx-reporter
 
 # Build with Maven
 mvn clean package

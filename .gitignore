@@ -45,3 +45,5 @@ Thumbs.db
 *.ear
 *.nar
 *.rar
+
+.claude/
