@@ -57,6 +57,19 @@ cp target/advanced-docx-reporter-1.0.0.jar /path/to/jmeter/lib/ext/
 4. Run your test
 5. The DOCX report will be generated automatically when the test completes
 
+### Important: Save Response Data
+
+To include response data in your report (using `%responseData%` variable or HTML rendering), you must configure JMeter to save response data:
+
+1. In your HTTP Request sampler or HTTP Request Defaults, ensure **Save Response Data** is enabled
+2. Alternatively, add a **View Results Tree** listener and check **Save Response Data (XML)** in the Configure button
+3. Or set in `jmeter.properties` or `user.properties`:
+   ```properties
+   jmeter.save.saveservice.response_data=true
+   ```
+
+> **Note:** Without saving response data, the `%responseData%` variable will be empty and HTML rendering will not work.
+
 ## Configuration Options
 
 | Option | Description | Default |
