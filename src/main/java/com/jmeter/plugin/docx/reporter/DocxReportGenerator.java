@@ -363,7 +363,19 @@ public class DocxReportGenerator {
 
         for (int i = 0; i < samples.size(); i++) {
             SampleResult sample = samples.get(i);
-            String resolvedFormat = SampleVariableResolver.resolve(recordFormat, sample);
+            String responseData = sample.getResponseDataAsString();
+            boolean shouldRenderAsImage = renderHtmlAsImage && HtmlToImageRenderer.isHtml(responseData);
+
+            // For HTML rendering, replace responseData placeholder with empty string
+            // (we'll add the image separately)
+            String resolvedFormat;
+            if (shouldRenderAsImage) {
+                String originalResponseData = responseData != null ? responseData : "";
+                resolvedFormat = SampleVariableResolver.resolve(recordFormat, sample)
+                        .replace(originalResponseData, "[See image below]");
+            } else {
+                resolvedFormat = SampleVariableResolver.resolve(recordFormat, sample);
+            }
 
             XWPFParagraph para = document.createParagraph();
             para.setSpacingBefore(100);
@@ -375,9 +387,15 @@ public class DocxReportGenerator {
             numberRun.setBold(true);
             numberRun.setFontSize(10);
 
-            // Add sample data
+            // Add sample data with newline support
             XWPFRun dataRun = para.createRun();
-            dataRun.setText(resolvedFormat);
+            String[] lines = resolvedFormat.split("\\\\n|\\n");
+            for (int j = 0; j < lines.length; j++) {
+                dataRun.setText(lines[j]);
+                if (j < lines.length - 1) {
+                    dataRun.addBreak();
+                }
+            }
             dataRun.setFontSize(10);
 
             // Color based on success/failure
@@ -385,6 +403,49 @@ public class DocxReportGenerator {
                 dataRun.setColor("228B22");
             } else {
                 dataRun.setColor("DC143C");
+            }
+
+            // Render HTML response as image if enabled
+            if (shouldRenderAsImage) {
+                try {
+                    byte[] imageBytes = HtmlToImageRenderer.renderHtmlToImage(responseData, HTML_IMAGE_WIDTH);
+                    if (imageBytes != null) {
+                        // Create a new paragraph for the image
+                        XWPFParagraph imagePara = document.createParagraph();
+                        imagePara.setSpacingBefore(100);
+                        imagePara.setSpacingAfter(200);
+
+                        // Calculate image dimensions
+                        ByteArrayInputStream bis = new ByteArrayInputStream(imageBytes);
+                        BufferedImage bufferedImage = ImageIO.read(bis);
+                        bis.close();
+
+                        int imgWidth = bufferedImage.getWidth();
+                        int imgHeight = bufferedImage.getHeight();
+
+                        // Scale to fit page width (about 6 inches = 432 points)
+                        int maxWidthEmu = Units.toEMU(432);
+                        int widthEmu = maxWidthEmu;
+                        int heightEmu = (int) ((double) imgHeight / imgWidth * widthEmu);
+
+                        // Add image
+                        XWPFRun imageRun = imagePara.createRun();
+                        bis = new ByteArrayInputStream(imageBytes);
+                        imageRun.addPicture(bis, XWPFDocument.PICTURE_TYPE_PNG,
+                                "response_" + (i + 1) + ".png", widthEmu, heightEmu);
+                        bis.close();
+                    }
+                } catch (Exception e) {
+                    log.warn("Failed to render HTML image for sample {}: {}",
+                            sample.getSampleLabel(), e.getMessage());
+                    // Add error message paragraph
+                    XWPFParagraph errorPara = document.createParagraph();
+                    XWPFRun errorRun = errorPara.createRun();
+                    errorRun.setText("[Image rendering failed]");
+                    errorRun.setFontSize(9);
+                    errorRun.setItalic(true);
+                    errorRun.setColor("999999");
+                }
             }
         }
     }
